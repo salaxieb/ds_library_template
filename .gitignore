@@ -8,14 +8,6 @@
 # environment
 .env
 
-# requirements
+#requirements
 requirements.txt
 requirements.dev.txt
-
-# dataset and vocab
-dataset/**
-**/vocab.txt
-**/*.txt
-
-# model
-trained_model/**

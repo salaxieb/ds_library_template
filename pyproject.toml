@@ -9,9 +9,7 @@ description = "Ctrl+c, Ctrl_v ready ds template"
 authors = ["insalakhiev <INSalakhiev@sberbank.ru>"]
 
 [tool.poetry.dependencies]
-python = ">=3.9,<=3.11"
-pathlib = "^1.0.1"
-datasets = "^2.13.1"
+python = ">=3.6.2,<3.10"
 
 [tool.poetry.dev-dependencies]
 tox = "^3.24.4"
@@ -19,10 +17,3 @@ mypy = "^0.910"
 wemake-python-styleguide = "^0.15.3"
 pylint = "^2.11.1"
 black = "^21.9b0"
-
-[tool.mypy]
-ignore_missing_imports = true
-
-[tool.flake8]
-max-line-length = 88
-ignore = "WPS412, D100, D104, E501"
