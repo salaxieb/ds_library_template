@@ -1,143 +1,96 @@
-import pickle
+from datasets import load_dataset
+import numpy as np
 from pathlib import Path
 
-import numpy as np
-from datasets import load_dataset
+from language_model import Tokenizer
+from language_model import FullyConnected, Embedding, SoftmaxCrossEntropyLoss
 
-from language_model import (
-    DataSupplier,
-    Embedding,
-    FullyConnected,
-    MultyHeadSelfAttention,
-    Perplexity,
-    PositionalEncoding,
-    SelfAttentionHead,
-    SoftmaxCrossEntropyLoss,
-    Tokenizer,
-)
 
 if __name__ == "__main__":
-    ##############
-    ### config ###
-    ##############
-    vocab_size = 5000
-    context_size = 200
-    batch_size = 64
-    embedding_size = 264
-    transformer_head_embedding_size = 64
-    num_heads = 12
-    num_mh_self_attention_layers = 12
-    learning_rate = 0.001
 
-    ###############
-    ### dataset ###
-    ###############
-    dataset_path = Path("dataset")
-    dataset_path.mkdir(exist_ok=True)
+    # ## dataset
+    # dataset_path = Path("dataset")
+    # dataset_path.mkdir(exist_ok=True)
 
-    if not (dataset_path / "tiny_shakespeare.txt").exists():
-        d = load_dataset("tiny_shakespeare")
-        with open(dataset_path / "tiny_shakespeare.txt", "w") as f:
-            for subset_name, subset in d.data.items():
-                subset = subset.to_pandas()
-                for line in subset.text:
-                    f.write(str(line))
+    # if not (dataset_path / "tiny_shakespeare.txt").exists():
+    #     d = load_dataset("tiny_shakespeare")
+    #     with open(dataset_path / "tiny_shakespeare.txt", "w") as f:
+    #         for subset_name, subset in d.data.items():
+    #             subset = subset.to_pandas()
+    #             for line in subset.text:
+    #                 f.write(str(line))
+    #                 f.write("\n")
 
-    #################
-    ### tokenizer ###
-    #################
-    tokenizer_path = Path("trained_tokenizer_vocab")
-    tokenizer_path.mkdir(exist_ok=True)
-    vocab_path = tokenizer_path / "vocab.txt"
+    # ## tokenizer
+    # tokenizer_path = Path("trained_tokenizer_vocab")
+    # tokenizer_path.mkdir(exist_ok=True)
+    # vocab_path = tokenizer_path / "vocab.txt"
 
-    if not vocab_path.exists():
-        tokenizer = Tokenizer(vocab_size=vocab_size)
-        tokenizer.fit(dataset_path, save_path=vocab_path)
+    # if not vocab_path.exists():
+    #     tokenizer = Tokenizer(vocab_size=2000)
+    #     tokenizer.fit(dataset_path, save_path=vocab_path)
 
-    tokenizer = Tokenizer().from_pretrained(vocab_path)
-    test_msg = "example message for encoder and decoder"
-    encoded = tokenizer.encode(test_msg)
-    assert tokenizer.decode(encoded) == test_msg
+    # tokenizer = Tokenizer().from_pretrained(vocab_path)
+    # encoded = tokenizer.encode(
+    #     "First, you know Caius Marcius is chief enemy to the people.!"
+    # )
 
-    ################
-    ### data gen ###
-    ################
-    data_supplier = DataSupplier(
-        tokenizer,
-        corpus_path=dataset_path,
-        context_size=context_size,
-        batch_size=batch_size,
-    )
+    # print(encoded)
+    # print(tokenizer.decode(encoded))
 
-    metrics = {"perplexity": Perplexity()}
+    encoded = [
+        67,
+        1753,
+        90,
+        24,
+        126,
+        1755,
+        35,
+        42,
+        627,
+        101,
+        42,
+        75,
+        77,
+        627,
+        1756,
+        110,
+        17,
+        918,
+        59,
+        32,
+        6,
+        70,
+        12,
+        795,
+        1757,
+        13,
+        6,
+        16,
+        19,
+        133,
+        8,
+        111,
+    ]
+    encoded = [67] * 20
 
-    #############
-    ### model ###
-    #############
-    save_name = Path("trained_model/trained_model.pkl")
-    model = (
-        [Embedding(vocab_size=vocab_size, embedding_size=embedding_size)]
-        + [PositionalEncoding(context_size=context_size, embedding_size=embedding_size)]
-        + [
-            MultyHeadSelfAttention(
-                input_embedding_size=embedding_size,
-                context_size=context_size,
-                output_embedding_size=embedding_size,
-                internal_embedding_size=transformer_head_embedding_size,
-                num_heads=num_heads,
-            )
-            for _ in range(num_mh_self_attention_layers)
-        ]
-        + [FullyConnected(input_neurons=embedding_size, output_neurons=vocab_size)]
-    )
-    if save_name.exists():
-        with save_name.open("rb") as f:
-            model = pickle.load(f)
-
-    print("model initialised nb of params:", sum(layer.nb_of_params for layer in model))
-    ###########
-    ### fit ###
-    ###########
+    ## model
+    emb = Embedding(vocab_size=2000, embedding_size=64)
+    connected = FullyConnected(input_neurons=64, output_neurons=5)
     ce_loss = SoftmaxCrossEntropyLoss()
-    for i, (input_batch, targets_batch) in enumerate(data_supplier):
-        x = input_batch
-        # forward
-        for layer in model:
-            x = layer(x)
-        print(f"batch {i}", end=" ")
-        print(f"loss {ce_loss.loss(targets_batch, x)}", end=" ")
-        print(
-            f"metrics:",
-            [f"{name}: {func(targets_batch, x)}" for name, func in metrics.items()],
-        )
-        dE_dx = ce_loss.backward()
-        # backward
-        for layer in reversed(model):
-            dE_dx = layer.backward(dE_dx)
-        if i == 30: 
-            save_name.parent.mkdir(exist_ok=True)
-            with save_name.open("wb") as f:
-                pickle.dump(model, f)
-                break
 
-    #############
-    ### infer ###
-    #############
-    # inp = input()
-    inp = "MENENIUS:\n"
-    print("input:", inp)
-    tokens = tokenizer.encode(inp)
-
-    for i in range(50):
-        padding = [tokenizer.token2id["<EOS>"]] * max(0, context_size - len(tokens))
-        x = [padding + tokens]
-        
-        for layer in model:
-            x = layer(x)
-        x = x[0, -1, :]
-        x = np.exp(x) / sum(np.exp(x))
-        token_id = np.random.choice(np.arange(vocab_size), p=x)
-        if token_id == 0:
-            break
-        tokens.append(token_id)
-        print("output:", tokenizer.decode(tokens))
+    target = np.array([0, 0, 1, 0, 0])
+    for enc in encoded:
+        # print('enc', enc)
+        x = emb(enc)
+        # print('x emb', x)
+        x = connected(x)
+        # print('x conn', x)
+        loss = ce_loss.loss(target, x)
+        print("loss", loss)
+        dE_dO = ce_loss.err_diff()
+        # print('err act', dE_dO)
+        dE_dO = connected.backward(dE_dO)
+        # print('err conn', dE_dO)
+        end = emb.backward(dE_dO)
+        # print('end', end)

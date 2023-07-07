@@ -35523,7 +35523,12 @@ Till I can find occasion of revenge.
 
 BAPTISTA:
 Was ever gentleman thus grieved as I?
+<<<<<<< HEAD
 But who comes here?
+=======
+But who comes here
+?
+>>>>>>> 13e2879 (made tokenizer from scratch, made basic layers mock)
 
 GREMIO:
 Good morrow, neighbour Baptista.
@@ -37665,7 +37670,12 @@ Your son shall have my daughter with consent.
 
 TRANIO:
 I thank you, sir. Where then do you know best
+<<<<<<< HEAD
 We be affied and such assurance ta'en
+=======
+We be affied and such assu
+rance ta'en
+>>>>>>> 13e2879 (made tokenizer from scratch, made basic layers mock)
 As shall with either part's agreement stand?
 
 BAPTISTA:
@@ -39998,3 +40008,7 @@ ANTONIO:
 Noble Sebastian,
 Thou let'st thy fortune sleep--die, rather; wink'st
 Whiles thou art waking.
+<<<<<<< HEAD
+=======
+
+>>>>>>> 13e2879 (made tokenizer from scratch, made basic layers mock)

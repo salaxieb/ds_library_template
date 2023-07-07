@@ -9,7 +9,9 @@ description = "Ctrl+c, Ctrl_v ready ds template"
 authors = ["insalakhiev <INSalakhiev@sberbank.ru>"]
 
 [tool.poetry.dependencies]
-python = ">=3.6.2,<3.10"
+python = ">=3.9,<=3.11"
+pathlib = "^1.0.1"
+datasets = "^2.13.1"
 
 [tool.poetry.dev-dependencies]
 tox = "^3.24.4"

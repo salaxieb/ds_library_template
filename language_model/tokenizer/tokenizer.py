@@ -1,39 +1,37 @@
 import re
 from collections import Counter, defaultdict
-from pathlib import Path
-from typing import Dict, List, Tuple
-
+from typing import List, Tuple
 from tqdm import trange
+
+from pathlib import Path
 
 
 class Tokenizer:
     def __init__(self, vocab_size: int = 0):
         self.vocab_size = vocab_size
-        self.re_token = re.compile(r"[^a-zA-Z\d\s]|[a-zA-Z\d]+|\n")
-        self.token2id: Dict[str, int] = {}
-        self.id2token: Dict[int, str] = {}
-        # EOS or PAD token must be number 0,
-        # it will be taken into consideration in loss function
+        self.re_token = re.compile(r"[^a-zA-Z\d\s]|[a-zA-Z\d]+")
+        self.token2id = {}
+        self.id2token = {}
         self.special_tokens = {
-            0: "<EOS>",
-            1: "<UNK>",
-            2: "<NL>",
+            0: "<UNK>",
+            1: "<PAD>",
+            2: "<EOS>",
         }
         # cache for token, which can't encoded to single token
         # and tricky splitting must be selected
-        self.encoding_cache: Dict[str, Tuple[List[int], int]] = {}
+        self.encoding_cache = {}
 
     def fit(self, corpus_path: Path, save_path: Path):
-        text_files = list(corpus_path.glob("*.txt"))
+        text_files = corpus_path.glob("*.txt")
         bytes_count = self.bytes_counts_init(text_files)
         vocab = self.init_vocab(bytes_count)
 
-        for _ in trange(len(vocab), self.vocab_size, 1, desc="tokenizer training"):
+        for _ in trange(len(vocab), self.vocab_size, 1):
             bp_counts = self.count_byte_pairs(bytes_count)
             most_common_byte_pair = max(bp_counts, key=lambda key: bp_counts[key])
             # remove ## in the beginning of second symbol
             joined = f"{most_common_byte_pair[0]}{most_common_byte_pair[1][2:]}"
-            # print("most_common_byte_pair", most_common_byte_pair)
+            print("most_common_byte_pair", most_common_byte_pair)
             vocab.append(joined)
             bytes_count = self.combine_byte_pair(
                 most_common_byte_pair, bytes_count, joined
@@ -53,14 +51,7 @@ class Tokenizer:
             for i, token in enumerate(vocab):
                 self.token2id[token] = i
                 self.id2token[i] = token
-        # returning back <NL> to \n
-        new_line_index = self.token2id["<NL>"]
-        self.token2id["\n"] = new_line_index
-        self.id2token[new_line_index] = "\n"
-        del self.token2id["<NL>"]
         self.vocab_size = len(self.token2id)
-        assert self.token2id["<EOS>"] == 0, "loss requirement"
-        print("loaded pretrained tokeinzer, vocab size:", self.vocab_size)
         return self
 
     def encode_token(self, token) -> Tuple[List[int], int]:
@@ -121,7 +112,7 @@ class Tokenizer:
         return vocab
 
     def bytes_counts_init(self, text_paths: List[Path]) -> List[Tuple[List[str], int]]:
-        counts: Dict[str, int] = defaultdict(int)
+        counts = defaultdict(int)
         for txt_file in text_paths:
             with open(txt_file, "r") as f:
                 texts = f.read()
@@ -129,9 +120,15 @@ class Tokenizer:
 
                 for token, count in Counter(tokens).items():
                     counts[token] += count
-        # fixing \n to be <NL>
-        # <NL> added thru special tokens
-        # counts["<NL>"] += counts["\n"]
+                # special_symbols = self.re_token.findall(texts)
+                # special_symbols_counts = Counter(special_symbols)
+                # print("special_symbols_counts", special_symbols_counts)
+
+                # for token, count in special_symbols_counts.items():
+                #     counts[token] += count
+
+        # fixing \n to be \\n
+        counts["\\n"] += counts["\n"]
         del counts["\n"]
 
         bytes_count = []
