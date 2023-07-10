@@ -3,7 +3,12 @@ import numpy as np
 from pathlib import Path
 
 from language_model import Tokenizer
-from language_model import FullyConnected, Embedding, SoftmaxCrossEntropyLoss
+from language_model import (
+    FullyConnected,
+    Embedding,
+    SoftmaxCrossEntropyLoss,
+    MultyHeadSelfAttention,
+)
 
 
 if __name__ == "__main__":
@@ -38,59 +43,65 @@ if __name__ == "__main__":
     # print(encoded)
     # print(tokenizer.decode(encoded))
 
-    encoded = [
-        67,
-        1753,
-        90,
-        24,
-        126,
-        1755,
-        35,
-        42,
-        627,
-        101,
-        42,
-        75,
-        77,
-        627,
-        1756,
-        110,
-        17,
-        918,
-        59,
-        32,
-        6,
-        70,
-        12,
-        795,
-        1757,
-        13,
-        6,
-        16,
-        19,
-        133,
-        8,
-        111,
-    ]
-    encoded = [67] * 20
+    vocab_size = 87
+    context_size = 7
+    batch_size = 3
+    transformer_embedding_size = 64
+    token_embedding_size = 24
+
+    encoded = np.array(
+        [[6, 2, 7, 8, 1, 9], [34, 2, 67, 78, 2, 5], [6, 2, 67, 86, 1, 8]]
+    )
+    inp = np.hstack((np.zeros((batch_size, 1)), encoded)).astype(int)
+    target = np.hstack((encoded, np.zeros((batch_size, 1)))).astype(int)
+    # target = np.array([np.zeros((context_size, vocab_size))[range(len(enc)), enc[1:] + [0]] for enc in  encoded])
+    # print(encoded.reshape(-1, 1))
+    # target = np.zeros((batch_size, context_size, vocab_size))
+    # target[range(batch_size), range(context_size), encoded.reshape(-1)] = 1
+    # print()
+    # print(target)
+    losses = []
 
     ## model
-    emb = Embedding(vocab_size=2000, embedding_size=64)
-    connected = FullyConnected(input_neurons=64, output_neurons=5)
-    ce_loss = SoftmaxCrossEntropyLoss()
-
-    target = np.array([0, 0, 1, 0, 0])
-    for enc in encoded:
-        # print('enc', enc)
-        x = emb(enc)
-        # print('x emb', x)
+    emb = Embedding(vocab_size=vocab_size, embedding_size=token_embedding_size)
+    self_att = MultyHeadSelfAttention(
+        input_embedding_size=token_embedding_size,
+        context_size=context_size,
+        output_embedding_size=transformer_embedding_size,
+        internal_embedding_size=48,
+        num_heads=4,
+    )
+    # self_att2 = MultyHeadSelfAttention(
+    #     input_embedding_size=token_embedding_size,
+    #     context_size=context_size,
+    #     output_embedding_size=transformer_embedding_size,
+    #     internal_embedding_size=48,
+    #     num_heads=4,
+    # )
+    connected = FullyConnected(
+        input_neurons=transformer_embedding_size, output_neurons=vocab_size
+    )
+    ce_loss = SoftmaxCrossEntropyLoss(vocab_size=vocab_size)
+    for i in range(50):
+        embedding = emb(inp)
+        # print('x emb', x.shape)
+        x = self_att(embedding, embedding)
+        # x = self_att2(x, embedding)
+        # print('x att', x.shape)
         x = connected(x)
-        # print('x conn', x)
+        # print('x conn', x.shape)
         loss = ce_loss.loss(target, x)
-        print("loss", loss)
-        dE_dO = ce_loss.err_diff()
-        # print('err act', dE_dO)
+        losses.append(loss)
+        # print("loss", loss)
+        dE_dO = ce_loss.backward()
+        # print('err act', dE_dO.shape)
         dE_dO = connected.backward(dE_dO)
-        # print('err conn', dE_dO)
+        # print('err conn', dE_dO.shape)
+        # dE_dO, dE_dEmb = self_att2.backward(dE_dO)
+        dE_dO, dE_dEmb = self_att.backward(dE_dO)
+        dE_dO = dE_dO + dE_dEmb
+        # print('err self att', dE_dO.shape)
         end = emb.backward(dE_dO)
         # print('end', end)
+
+    print(losses)
