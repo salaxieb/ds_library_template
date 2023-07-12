@@ -1,10 +1,10 @@
 include .env
 
 lint:
-	@poetry run mypy ds_template
-	@poetry run pylint ds_template
-	@poetry run flake8 ds_template
-	@poetry run black ds_template --check
+	@poetry run mypy language_model
+	@poetry run pylint language_model
+	@poetry run flake8 language_model
+	@poetry run black language_model --check
 
 
 test:

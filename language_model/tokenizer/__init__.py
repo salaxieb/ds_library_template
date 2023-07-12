@@ -1,1 +1,2 @@
 from language_model.tokenizer.tokenizer import Tokenizer
+from language_model.tokenizer.data_supplier import DataSupplier
