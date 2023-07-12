@@ -1,19 +1,20 @@
-from datasets import load_dataset
-import pickle 
-import numpy as np
+import pickle
 from pathlib import Path
 
-from language_model import Tokenizer, DataSupplier
-from language_model import (
-    FullyConnected,
-    Embedding,
-    SoftmaxCrossEntropyLoss,
-    SelfAttentionHead,
-    MultyHeadSelfAttention,
-    PositionalEncoding,
-)
-from language_model import Perplexity
+import numpy as np
+from datasets import load_dataset
 
+from language_model import (
+    DataSupplier,
+    Embedding,
+    FullyConnected,
+    MultyHeadSelfAttention,
+    Perplexity,
+    PositionalEncoding,
+    SelfAttentionHead,
+    SoftmaxCrossEntropyLoss,
+    Tokenizer,
+)
 
 if __name__ == "__main__":
     ##############
@@ -114,7 +115,7 @@ if __name__ == "__main__":
         for layer in reversed(model):
             dE_dx = layer.backward(dE_dx)
         if i == 10:
-            save_name.mkdir(exist_ok=True)
+            save_name.parent.mkdir(exist_ok=True)
             with save_name.open("wb") as f:
                 model = pickle.dump(model, f)
                 break

@@ -1,8 +1,6 @@
-from typing import List
+from pathlib import Path
 
 import numpy as np
-from pathlib import Path
-from tqdm import trange
 
 from language_model.tokenizer.tokenizer import Tokenizer
 
@@ -21,8 +19,6 @@ class DataSupplier:
         self.batch_size = batch_size
 
     def __iter__(self):
-        inputs = []
-        tagets = []
         for dataset_file in self.datasets:
             with open(dataset_file) as f:
                 texts = f.read().split("\n\n")

@@ -19,3 +19,10 @@ mypy = "^0.910"
 wemake-python-styleguide = "^0.15.3"
 pylint = "^2.11.1"
 black = "^21.9b0"
+
+[tool.mypy]
+ignore_missing_imports = true
+
+[tool.flake8]
+max-line-length = 88
+ignore = "WPS412, D100, D104, E501"
