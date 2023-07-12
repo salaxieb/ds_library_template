@@ -11,3 +11,8 @@
 #requirements
 requirements.txt
 requirements.dev.txt
+
+# dataset and vocab
+dataset/**
+**/vocab.txt
+**/*.txt
