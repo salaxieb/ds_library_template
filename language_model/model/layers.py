@@ -2,8 +2,6 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 
-from language_model.model.utils import get_right_upper_triangle_indices
-
 
 class Layer:
     @abstractmethod
@@ -14,12 +12,12 @@ class Layer:
         return self.forward(*args, **kwargs)
 
     @abstractmethod
-    def forward(self, x: np.array) -> np.array:
-        return
+    def forward(self, x: np.ndarray) -> np.ndarray:
+        return x
 
     @abstractmethod
-    def backward(self, dE_dO):
-        return
+    def backward(self, dE_dO: np.ndarray) -> np.ndarray:
+        return dE_dO
 
     @property
     def nb_of_params(self) -> int:
@@ -54,9 +52,7 @@ class FullyConnected(Layer):
         self.b = np.random.randn(output_neurons) / norm_constant
         self.w = np.random.randn(input_neurons, output_neurons) / norm_constant
 
-    def forward(
-        self, x: "np.array shaped[input_neurons]"
-    ) -> "np.array shaped[output_neurons]":
+    def forward(self, x: np.ndarray) -> np.ndarray:
         self.x = x
         return x @ self.w + self.b
 
@@ -101,10 +97,10 @@ class PositionalEncoding(Layer):
         self.pe[:, 0::2, :] = np.sin(encoded_position[0::2, :])
         self.pe[:, 1::2, :] = np.cos(encoded_position[1::2, :])
 
-    def forward(self, x: np.array):
+    def forward(self, x: np.ndarray):
         return x + np.repeat(self.pe, x.shape[0], axis=0)
 
-    def backward(self, dE_dx: np.array):
+    def backward(self, dE_dx: np.ndarray):
         return dE_dx
 
 
@@ -112,7 +108,7 @@ class FeedForwardDotProduct(Layer):
     def __init__(self, embedding_size: int, output_size: int, norm_constant: int = 10):
         self.W = np.random.randn(embedding_size, output_size) / norm_constant
 
-    def forward(self, x: np.array):
+    def forward(self, x: np.ndarray):
         self.x = x  # shape context_size x embedding_size
         return self.x @ self.W
 
@@ -132,15 +128,13 @@ class TensorsDotProduct(Layer):
     def __init__(self):
         return
 
-    def forward(self, x1: np.array, x2: np.array):
+    def forward(self, x1: np.ndarray, x2: np.ndarray):  # type: ignore
         self.x1 = x1  # bs x a x b
         self.x2 = x2  # bs x b x c
         return np.einsum("ijk,ikp->ijp", x1, x2)  # bs x a x c
 
     def backward(self, dE_dO):
         # dE_dO a x c
-        # dE_dx1 a x b
-        # dE_dx2 b x c
         dE_dx1 = np.einsum("ijp,ikp->ijk", dE_dO, self.x2)  # bs x a x b
         dE_dx2 = np.einsum("ijk,ijp->ikp", self.x1, dE_dO)  # bs x a x c
         return dE_dx1, dE_dx2
@@ -198,7 +192,7 @@ class LayerNormalisation(Layer):
         self.dimensions = dimensions
         return
 
-    def forward(self, features: np.array):
+    def forward(self, features: np.ndarray):
         mean = np.mean(features, axis=tuple(range(1, self.dimensions)))
         mean = np.kron(
             mean.reshape(-1, *(1,) * (self.dimensions - 1)),
@@ -243,7 +237,7 @@ class SelfAttentionHead(Layer):
         self.multiply = MultiplyConstant(1 / self.q_k_v_size**0.5)
         self.softmax = Softmax()
 
-    def forward(self, x: np.array):
+    def forward(self, x: np.ndarray):
         # x shaped [context_size x embedding_size]
         Q = self.Wq_layer(x)  # out shape [context_size x q_k_v_size]
         K = self.Wk_layer(x)  # out shape [context_size x q_k_v_size]
@@ -310,7 +304,7 @@ class MultyHeadSelfAttention(Layer):
         )
         self.layer_norm_2 = LayerNormalisation(dimensions=3)
 
-    def forward(self, x: np.array):
+    def forward(self, x: np.ndarray):
         x_input = x.copy()
         x_arr = self.splitter(x)
         x_arr = [head(x) for x, head in zip(x_arr, self.heads)]
