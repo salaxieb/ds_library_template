@@ -1,5 +1,6 @@
 # fmt:off
 from language_model.model.layers import (  # noqa: E501, F401  # imported but unused
+    Elu,
     Embedding,
     FullyConnected,
     MultyHeadSelfAttention,
