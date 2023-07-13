@@ -114,10 +114,10 @@ if __name__ == "__main__":
         # backward
         for layer in reversed(model):
             dE_dx = layer.backward(dE_dx)
-        if i == 10:
+        if i == 30: 
             save_name.parent.mkdir(exist_ok=True)
             with save_name.open("wb") as f:
-                model = pickle.dump(model, f)
+                pickle.dump(model, f)
                 break
 
     #############
@@ -128,8 +128,10 @@ if __name__ == "__main__":
     print("input:", inp)
     tokens = tokenizer.encode(inp)
 
-    for i in range(15):
-        x = [tokens]
+    for i in range(50):
+        padding = [tokenizer.token2id["<EOS>"]] * max(0, context_size - len(tokens))
+        x = [padding + tokens]
+        
         for layer in model:
             x = layer(x)
         x = x[0, -1, :]
@@ -138,4 +140,4 @@ if __name__ == "__main__":
         if token_id == 0:
             break
         tokens.append(token_id)
-        print("output:", tokenizer.decode(tokens), end="\r")
+        print("output:", tokenizer.decode(tokens))

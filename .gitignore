@@ -16,3 +16,6 @@ requirements.dev.txt
 dataset/**
 **/vocab.txt
 **/*.txt
+
+# model
+trained_model/**
