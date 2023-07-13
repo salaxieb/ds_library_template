@@ -45,6 +45,20 @@ class Softmax(Layer):
         return dE_dx
 
 
+class Elu(Layer):
+    def __init__(self, alpha = 0.2):
+        self.alpha = alpha
+
+    def forward(self, x: np.ndarray) -> np.ndarray:
+        x[x < 0] = np.exp(x[x<0]) - 1
+        self.out = x
+        return self.out
+
+    def backward(self, dE_dO: np.ndarray) -> np.ndarray:
+        self.out[self.out > 0] = 0
+        return self.out + 1
+
+
 class FullyConnected(Layer):
     def __init__(
         self, input_neurons: int, output_neurons: int, norm_constant: int = 10
@@ -302,6 +316,7 @@ class MultyHeadSelfAttention(Layer):
         self.feed_forward = FullyConnected(
             input_neurons=output_embedding_size, output_neurons=output_embedding_size
         )
+        self.elu = Elu()
         self.layer_norm_2 = LayerNormalisation(dimensions=3)
 
     def forward(self, x: np.ndarray):
@@ -313,6 +328,7 @@ class MultyHeadSelfAttention(Layer):
         x = self.add(x, x_input)
         norm_sum_x = self.layer_norm_1(x)
         x = self.feed_forward(norm_sum_x.copy())
+        x = self.elu(x)
         x = self.add(x, norm_sum_x)
         # print('feed_forward', x.shape)
         x = self.layer_norm_2(x)
@@ -321,6 +337,7 @@ class MultyHeadSelfAttention(Layer):
     def backward(self, dE_dx, learning_rate: float = 0.001):
         dE_dx = self.layer_norm_2.backward(dE_dx)
         dE_dx, dE_norm_sum_x = self.add.backward(dE_dx)
+        dE_dx = self.elu.backward(dE_dx)
         dE_dx = self.feed_forward.backward(dE_dx, learning_rate=learning_rate)
         dE_dx = dE_dx + dE_norm_sum_x
         dE_dx = self.layer_norm_1.backward(dE_dx)
