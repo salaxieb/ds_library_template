@@ -3,7 +3,6 @@ include .env
 lint:
 	@poetry run mypy ds_template
 	@poetry run pylint ds_template
-	@poetry run flake8 ds_template
 	@poetry run black ds_template --check
 
 

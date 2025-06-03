@@ -9,11 +9,14 @@ description = "Ctrl+c, Ctrl_v ready ds template"
 authors = ["insalakhiev <INSalakhiev@sberbank.ru>"]
 
 [tool.poetry.dependencies]
-python = ">=3.6.2,<3.10"
+python = ">=3.9,<3.13"
+torch = "^2.7.0"
+torchvision = "^0.22.0"
+torchaudio = "^2.7.0"
 
-[tool.poetry.dev-dependencies]
-tox = "^3.24.4"
-mypy = "^0.910"
-wemake-python-styleguide = "^0.15.3"
-pylint = "^2.11.1"
-black = "^21.9b0"
+[tool.poetry.group.dev.dependencies]
+tox = "*"
+mypy = "*"
+pylint = "*"
+black = "*"
+pytest = "*"
